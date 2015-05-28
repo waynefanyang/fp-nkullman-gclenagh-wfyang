@@ -1,32 +1,41 @@
+
 body {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
-#overview {
-	position: fixed;
-	left: 20px;
-	width: 50%;
-}
-
 #parent {
-	margin-left: 50%;
+	width: 960px;
+  margin:20px auto;
 }
 
-.overlay {
-	fill: rgba(0, 0, 0, .1);;
-	pointer-events: all;
+
+#overview {
+	width: 960px;
 }
 
-svg text {
-	font: 10px sans-serif;
-}
-.aatitle {
-	font-weight: bold;
+#group{
+  float: left;
+  width: 480px;
 }
 
-.axis line,
-.axis path {
-	fill: none;
-	stroke: #000;
-	shape-rendering: crispEdges;
+#sites{
+  width: 325px;
+  float: left;
 }
+
+.brush .extent {
+  stroke: steelblue;
+  fill-opacity: .125;
+  shape-rendering: crispEdges;
+}
+
+#options{
+border:1px solid black;
+}
+
+#export_button {
+	display: block;
+}
+
+
+
