@@ -4,9 +4,13 @@ body {
 }
 
 #overview {
-	position: absolute;
-	left: 20px;
-	width: 50%;
+	width: 960px;
+  margin-left: 25px;
+}
+
+#group{
+  float: left;
+  width: 480px;
 }
 
 #parent {
@@ -22,7 +26,10 @@ body {
 #export_button {
 	display: block;
 }
-
+.overlay {
+	fill: rgba(0, 0, 0, .1);;
+	pointer-events: all;
+}
 #options {
 	position: absolute;
 	right: 20px;
@@ -31,9 +38,4 @@ body {
 
 table {
 	border-spacing: 5px 10px;
-}
-
-.overlay {
-	fill: rgba(0, 0, 0, .1);;
-	pointer-events: all;
 }
