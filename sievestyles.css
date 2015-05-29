@@ -3,14 +3,9 @@ body {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
-#parent {
-	width: 960px;
-  margin:20px auto;
-}
-
-
 #overview {
 	width: 960px;
+  margin-left: 25px;
 }
 
 #group{
@@ -18,9 +13,8 @@ body {
   width: 480px;
 }
 
-#sites{
-  width: 325px;
-  float: left;
+#parent {
+	margin-left: 50%;
 }
 
 .brush .extent {
@@ -29,13 +23,19 @@ body {
   shape-rendering: crispEdges;
 }
 
-#options{
-border:1px solid black;
-}
-
 #export_button {
 	display: block;
 }
+.overlay {
+	fill: rgba(0, 0, 0, .1);;
+	pointer-events: all;
+}
+#options {
+	position: absolute;
+	right: 20px;
+	width: 300px;
+}
 
-
-
+table {
+	border-spacing: 5px 10px;
+}
