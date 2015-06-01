@@ -10,8 +10,13 @@ function updatePyramid(sites){
       }
       possiblecounts.push(mmcount);
     }
+    mincounts = d3.min(possiblecounts);
+    maxcounts = d3.max(possiblecounts);
+    skipcount = Math.ceil((maxcounts-mincounts)/16);
+    var tickvals = d3.range(mincounts,maxcounts+1).filter(function(d,i){return (i % skipcount === 0)});
     PyramidDiv = d3.select("#group");
     mdata = [];
+    
     for(var i = 0; i < d3.max(possiblecounts)+1; i++){
         mdata.push({mismatches:i.toString(), vaccine:0, placebo:0});
         }
@@ -36,7 +41,7 @@ function updatePyramid(sites){
     d3.max(mdata, function(d) { return d.placebo/numplac; })
   );    
   var margin = {
-      top: 20,
+      top: 50,
       right: 20,
       bottom: 24,
       left: 25,
@@ -56,18 +61,20 @@ function updatePyramid(sites){
       .nice();
    
   var yScale = d3.scale.ordinal()
-      .domain(mdata.map(function(d) { return d.mismatches; }))
-      .rangeRoundBands([h,0], 0.1);
-      
+      .domain(d3.range(mincounts,maxcounts+1))
+      .rangeRoundBands([h,0],0.1);
+
   var yAxisLeft = d3.svg.axis()
       .scale(yScale)
       .orient('right')
+      .tickValues(tickvals)
       .tickSize(4,0)
       .tickPadding(margin.middle-4);
 
   var yAxisRight = d3.svg.axis()
       .scale(yScale)
       .orient('left')
+      .tickValues(tickvals)
       .tickSize(4,0)
       .tickFormat('');
       
@@ -139,6 +146,17 @@ function updatePyramid(sites){
 
 }
 function drawPyramid(sites){
+    var possiblecounts = [];
+    for(var patient in seqID_lookup){
+      if(seqID_lookup[patient].mismatch != undefined){
+        mmcount = 0;
+        for(var i = 0; i < sites.length; i++){
+            mmcount += seqID_lookup[patient].mismatch[sites[i]]; 
+        }
+      }
+      possiblecounts.push(mmcount);
+    }
+    
     mmdata = [];
     for(var i = 0; i < sites.length+1; i++){
         mmdata.push({mismatches:i.toString(), vaccine:0, placebo:0});
@@ -162,7 +180,7 @@ function drawPyramid(sites){
         
     // margin.middle is distance from center line to each y-axis
     var margin = {
-      top: 20,
+      top: 50,
       right: 20,
       bottom: 24,
       left: 25,
@@ -183,7 +201,8 @@ function drawPyramid(sites){
       // ADD A GROUP FOR THE SPACE WITHIN THE MARGINS
       .append('g')
         .attr('transform', translation(margin.left, margin.top));  
-      
+
+    
     // the xScale goes from 0 to the width of a region
     //  it will be reversed for the left x-axis
     var xScale = d3.scale.linear()
@@ -206,12 +225,14 @@ function drawPyramid(sites){
     var yAxisLeft = d3.svg.axis()
       .scale(yScale)
       .orient('right')
+      .ticks(18)
       .tickSize(4,0)
       .tickPadding(margin.middle-4);
 
     var yAxisRight = d3.svg.axis()
       .scale(yScale)
       .orient('left')
+      .ticks(18)
       .tickSize(4,0)
       .tickFormat('');
 
@@ -245,15 +266,29 @@ function drawPyramid(sites){
       .attr('class', 'axis y right')
       .attr('transform', translation(pointB, 0))
       .call(yAxisRight);
-    
+     
+     // draw title
+    svg.append("text")
+      .attr("x",w/2)
+      .attr("y",-30)
+      .style("text-anchor","middle")
+      .style("font-size","15px")
+      .text("Distribution of Mismatch Counts Across Selected Sites");
+    // labels etc.  
     svg.append('text')
       .text("Vaccine Group")
-      .attr('x',-5)
+      .attr('x',0)
       .attr('y',0);
     svg.append('text')
       .text("Placebo Group")
-      .attr('x',235)
+      .attr('x',330)
       .attr('y',0);
+      
+    svg.append("text")
+      .text("Number of Mismatches")
+      .attr("x",w/2)
+      .attr("y",-2)
+      .style("text-anchor","middle");
 
     svg.append('g')
       .attr('class', 'axis x left')

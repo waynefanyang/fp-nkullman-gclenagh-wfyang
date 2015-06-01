@@ -19,7 +19,8 @@ function generateTable(){
       .attr("height", theight + tmargin.top + tmargin.bottom);
   canvas.append("g")
       .attr("transform", "translate(" + tmargin.left + "," + tmargin.top + ")");
-
+  
+  // Draw Title
   var title = canvas.append("g");
     
   title.append("rect")
@@ -29,7 +30,7 @@ function generateTable(){
     .style("fill","black");
 
   title.append("text")
-    .attr("x",+(4*fieldWidth-1)/2)
+    .attr("x",twidth/2)
     .attr("y",fieldHeight/2+4)
     .attr("text-anchor","middle")
     .style("fill","white")
@@ -65,25 +66,31 @@ function generateTable(){
 }
 function updateTable(sites){
   canvas.attr("height",theight+(sites.length+4)*(fieldHeight+1)  );
-  var vaccine_entropies = sites.map(function(i) {
-    return jointentropy([i], sequences.vaccine, numvac);
+  var vaccine_entropies = sites.map(function(d) {
+    return entropies.vaccine[d];
   });
-  var placebo_entropies = sites.map(function(i) {
-    return jointentropy([i], sequences.placebo, numplac);
+  var placebo_entropies = sites.map(function(d) {
+    return entropies.placebo[d];
   });
-  var combined_entropies = sites.map(function(i) {
-    return jointentropy([i], sequences_raw, numplac+numvac);
+  var combined_entropies = sites.map(function(d) {
+    return entropies.full[d];
   });
   var ent_data = sites.map(function(d, i)
   {
     return ["Env " + envmap[d].hxb2Pos,
-      vaccine_entropies[i].toFixed(2),
-      placebo_entropies[i].toFixed(2),
-      combined_entropies[i].toFixed(2)];
+      vaccine_entropies[i],
+      placebo_entropies[i],
+      combined_entropies[i]];
   });
-  var avg_data = ["Average Entropy", mean(vaccine_entropies).toFixed(2),
-                            mean(placebo_entropies).toFixed(2),
-                            mean(combined_entropies).toFixed(2)];
+  if(sites.length > 0){
+    var avg_data = ["Average Entropy", d3.mean(vaccine_entropies).toFixed(2),
+                            d3.mean(placebo_entropies).toFixed(2),
+                            d3.mean(combined_entropies).toFixed(2)];
+  } else {
+     var avg_data = ["Average Entropy", 0.00,
+                            0.00,
+                            0.00];
+  }
   var jts_data = gen_joint_entropies(sites);
   // creates the aggregate rows
   var avgEnter = averageRow.selectAll("g")
@@ -250,28 +257,14 @@ function updateTable(sites){
 }
 
 	function removeOnClick(d, i) {
-    console.log(d);
-    console.log(i);
-		var index = selected_sites.indexOf(d);
-		selected_sites.splice(index, 1);
-    d3.selectAll(".selected")
-      .classed("selected",function(e,j){
-        if(j == i){
-          return false;
-        } else {
-          return true;
-        }
-      })
-
-    d3.selectAll(".sitebars")
-      .data(vaccine.sequence)
-      .each(function(e,j){
-        if(d == j){
-          d3.select(this)
-            .attr("y",yScale(1))
-            .style("opacity",0.5);
-        }
-      })
+    var site = selected_sites[i];
+		selected_sites.splice(i, 1);
+    var bar = d3.select("#sitebar" + site);
+    var yval = Math.min(0.95*height, yScale(2-pvalues[site]));
+			bar.classed("selected",false)
+				.attr('opacity', 0.5)
+				.attr("y", yval )
+				.attr("height", height - yval);
     update_AAsites(selected_sites);
 		updatePyramid(selected_sites);
     updateTable(selected_sites);
@@ -285,4 +278,12 @@ function gen_joint_entropies(sites){
 }
 
 function onClickChangeView(d,i){
+  var site = selected_sites[i];
+  // 37 is (arbitrary) magic number for a pretty zoom extent
+  var s = 37;
+  // the location of the translation is off
+  var t = [-((site/vaccine.sequence.length)*(width)*(s-1) -
+          (width+margin.left)/(s*2)), 0];
+  // transition not smooth. needs help.
+  siteselSVG.transition().call(zoom.translate(t).scale(s).event);
 }
