@@ -15,17 +15,25 @@ var sequences;
 var seqID_lookup;
 /** Object with vaccine ID and AA sequence */
 var vaccine;
-/** Object with conservation and hxb2 info for each position */
+/** Array with conservation and hxb2 info for each position */
 var envmap;
+/* Lookup table with index for each hxb2 position*/
+var hxb2map = {};
 /** Number of people in the vaccine group */
 var numvac = 0;
 /** Number of people in the placebo group */
 var numplac = 0;
 /** Array of p-values */
 var pvalues =[];
+/** Array of q-values (False Discovery Rate adjusted P-values) */
+var qvalues = [];
+/** Array of Entropy Values */
 var entropies = {full:[],vaccine:[],placebo:[]};
+
 d3.text("env.aa.92TH023.fasta", function(vacdata) {
 	dovacparsing(vacdata);
+  d3.csv("qvalues.csv").row(function(d) {qvalues.push(+d.qvalue);})
+    .get(function(error, rows) {;});
   d3.csv("pvalues.csv").row(function(d) {pvalues.push(+d.pvalue);})
     .get(function(error, rows) {;});
 	d3.csv("rv144_trt_lookup.csv", function(trt_lookup_data) {
@@ -35,7 +43,11 @@ d3.text("env.aa.92TH023.fasta", function(vacdata) {
 			d3.text("rv144.env.aa.fasta", function(seqdata) {
 				doseqparsing(seqdata);
 				d3.csv("env.map.csv", function(mapdata){
-					makeenvmap(mapdata);
+					envmap = mapdata;
+					envmap.forEach(function(d, i)
+						{
+							hxb2map[d.hxb2Pos] = i;
+						});
 					sequences_raw = transpose(sequences_raw);
 					sequences.vaccine = transpose(sequences.vaccine);
 					sequences.placebo = transpose(sequences.placebo);
@@ -141,20 +153,6 @@ function doseqparsing(seqdata) {
 			i += 2;
 		}
 	}
-}
-
-/** Store HBX2 and conservation data in an object with keys for each AA position index
- */
-function makeenvmap(mapdata) {
-	envmap = d3.nest()
-		.key(function(d) {return d.posIndex;})
-		.rollup(function(d) {
-			return { "hxb2Pos": d[0].hxb2Pos,
-					 "hxb2aa": d[0].hxb2aa,
-					 "conservation": d[0].conservation };
-			
-		})
-		.map(mapdata);
 }
 
 /** Convert an array of strings to integers */
