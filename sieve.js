@@ -12,9 +12,9 @@ var barchartmargin = {top: 15, right: 100, bottom: 10, left: 50},
 	barchartwidth = 250,
 	barchartheight = 70;
 
-var margin =  {top: 20, right: 20, bottom: 30, left: 20};
+var margin =  {top: 20, right: 50, bottom: 40, left: 50};
 var width = 800 - margin.left - margin.right;
-var height =  110 - margin.top - margin.bottom;
+var height =  140 - margin.top - margin.bottom;
 		
 var plac_scale = d3.scale.linear()
 	.range([0, barwidth]);
@@ -34,7 +34,13 @@ var shift_down = false;
 var last_updated;
 var yscale_mode = 0; //0 = pval, 1 = entropy, -1 = constant
 
-			
+var pval_scale_ticks = [0.01 + 0.1, 0.05 + 0.1, 0.2 + 0.1, 1 + 0.1];
+function entropy_scale_ticks(entropy_scale_domain){
+	var ticks = d3.range(0, entropy_scale_domain[1]);
+	ticks.push(entropy_scale_domain[1]);
+	return ticks;
+}
+var selaxistitle = "p-value";
 
 // clear selecting mode even if you release your mouse elsewhere.
 d3.select(window).on("mouseup", function(){ last_updated = undefined; mouse_down = false; })
@@ -85,21 +91,32 @@ function generateSiteSelector() {
       .tickFormat(function(d,i){return envmap[d].hxb2Pos})
 			.orient("bottom");
 			
+	window.yAxisl = d3.svg.axis()
+		.scale(pval_scale)
+		.tickValues(pval_scale_ticks)
+		.tickFormat(function(d) {return Math.round((d - 0.1)*100)/100;})
+		.orient("left");
+	window.yAxisr = d3.svg.axis()
+		.scale(pval_scale)
+		.tickValues(pval_scale_ticks)
+		.tickFormat(function(d) {return Math.round((d - 0.1)*100)/100;})
+		.orient("right");
+			
 	window.sitebarwidth = xScale.range()[1] / d3.max(xScale.domain());
 			// = totalwidth/numbars
 	
 	window.zoom = d3.behavior.zoom().x(xScale).scaleExtent([1,100]).on("zoom", refresh);
 	
-	var siteselSVGfieldset = d3.select("#overview").append("fieldset")
+	var overviewfieldset = d3.select("#overview").append("fieldset")
 		.attr("class", "selectionfieldset");
 		
-	siteselSVGfieldset.append("legend")
+	overviewfieldset.append("legend")
 		.attr("border", "1px black solid")
 		.append("text")
 			.text("Vaccine sequence: " + vaccine.ID);
 	
-	window.siteselSVG = siteselSVGfieldset.append("svg")
-	    .attr("width", width + margin.left + margin.right)
+	window.siteselSVGg = overviewfieldset.append("svg")
+	    .attr("width", width + margin.right + margin.left)
 	    .attr("height", height + margin.top + margin.bottom)
 		.attr("id", "siteselSVG")
 		.append("g")
@@ -109,15 +126,15 @@ function generateSiteSelector() {
 		.attr("transform", "translate(" + margin.left + ", " + margin.top + ")")
 		.call(zoom);
 		
-	siteselSVG.on("mouseout", function() {d3.select("#tooltip").remove(); });
+	siteselSVGg.on("mouseout", function() {d3.select("#tooltip").remove(); });
 		
-	siteselSVG.append("rect")
+	siteselSVGg.append("rect")
 		.attr("class", "overlay")
 		.attr("transform", "translate(" + (-margin.left) + ", " + (-margin.top) + ")")
 	    .attr("width", width + margin.left + margin.right)
 	    .attr("height", height + margin.top + margin.bottom);
 		
-	window.sitebars = siteselSVG.selectAll(".sitebars")
+	window.sitebars = siteselSVGg.selectAll(".sitebars")
 	    .data(vaccine.sequence);
     
 	sitebars.enter().append("rect")
@@ -132,7 +149,7 @@ function generateSiteSelector() {
 		})
 		.attr("opacity", 0.5);
 		
-	window.foregroundbars = siteselSVG.selectAll(".foregroundbars")
+	window.foregroundbars = siteselSVGg.selectAll(".foregroundbars")
 		.data(vaccine.sequence);
 		
 	foregroundbars.enter().append("rect")
@@ -157,10 +174,31 @@ function generateSiteSelector() {
 			}
 		});
 		
-	siteselSVG.append("g")
+	siteselSVGg.append("g")
 		.attr("class", "x axis")
 		.attr("transform", "translate(0," + (height + 5) + ")")
 		.call(xAxis);
+	d3.select("#siteselSVG").append("text")
+		.attr("class", "x axis label")
+		.attr("text-anchor", "middle")
+		.attr("x", (width + margin.left + margin.right)/2)
+		.attr("y", (height + margin.top + .9*margin.bottom))
+		.text("HXB2 position");
+		
+	siteselSVGg.append("g")
+		.attr("class", "y axis l")
+		.attr("transform", "translate(-5,0)")
+		.call(yAxisl);
+	siteselSVGg.append("text")
+		.attr("class", "y axis label")
+		.attr("text-anchor", "end")
+		.attr("x", -5)
+		.attr("y", -margin.top/2)
+		.text(selaxistitle);
+	siteselSVGg.append("g")
+		.attr("class", "y axis r")
+		.attr("transform", "translate(" + (width+5) + ",0)")
+		.call(yAxisr);
 	
 	function refresh() {
 		if (!shift_down) {
@@ -174,19 +212,29 @@ function generateSiteSelector() {
 			
 			sitebars.attr("transform", "translate(" + d3.event.translate[0] +", 0)scale(" + d3.event.scale + ", 1)");
 			foregroundbars.attr("transform", "translate(" + d3.event.translate[0] +", 0)scale(" + d3.event.scale + ", 1)");
-			siteselSVG.select(".x.axis").call(xAxis.scale(xScale));
+			siteselSVGg.select(".x.axis").call(xAxis.scale(xScale));
 		}
 	}
 	
 	function bar_mousedover(d, i) {
 		var update_array = [];
-		siteselSVG.append("text")
+		siteselSVGg.append("text")
 			.attr("id", "tooltip")
 			.attr("x", margin.left + width)
 			.attr("y", -margin.top/2)
 			.attr("text-anchor", "end")
-			.text("HXB2 Pos: " + envmap[i].hxb2Pos +
-					" // p-value: " + pvalues[i].toPrecision(2));
+			.text(function () {
+				console.log("d is " + d + " and i is " + i);
+				if (yscale_mode === 0){ 
+					return "HXB2 Pos: " + envmap[i].hxb2Pos +
+						" // p-value: " + pvalues[i].toPrecision(2);
+				} else if (yscale_mode === 1) {
+					return "HXB2 Pos: " + envmap[i].hxb2Pos +
+						" // entropy: " + entropies.full[i];
+				} else {
+					return "HXB2 Pos: " + envmap[i].hxb2Pos;
+				}
+			});
 		
 		if (!mouse_down || !shift_down) { return; }
 		
@@ -260,7 +308,7 @@ function hxb2_selection()
 {
 	if (d3.event.which == 13)
 	{
-		_.flatten(this.value.split(",")
+		_.flatten(this.value.replace(/\s+/g,"").split(",")
 			.map(function(d)
 			{
 				var arr = d.split("-")
@@ -336,18 +384,30 @@ function yscale_selection()
 	{
 	case "pvalue":
 		yscale_mode = 0;
+		yAxisl.scale(pval_scale).tickValues(pval_scale_ticks)
+			.tickFormat(function(d) {return Math.round((d - 0.1)*100)/100;});
+		yAxisr.scale(pval_scale).tickValues(pval_scale_ticks)
+			.tickFormat(function(d) {return Math.round((d - 0.1)*100)/100;});
+		selaxistitle = "p-value";
 		break;
-  case "qvalue":
-    yscale_mode = 2;
 	case "entropy":
 		yscale_mode = 1;
 		if (entropy_scale.domain()[0] == -1)
 		{ //first time selection
 			entropy_scale.domain([0, _.max(entropies.full)]);
 		}
+		
+		yAxisl.scale(entropy_scale).tickValues(entropy_scale_ticks(entropy_scale.domain()))
+			.tickFormat(function(d) {return Math.round(d*100)/100;});
+		yAxisr.scale(entropy_scale).tickValues(entropy_scale_ticks(entropy_scale.domain()))
+			.tickFormat(function(d) {return Math.round(d*100)/100;});
+		selaxistitle = "entropy";
 		break;
 	case "constant":
 		yscale_mode = -1;
+		yAxisl.scale(entropy_scale).tickValues(0);
+		yAxisr.scale(entropy_scale).tickValues(0);
+		selaxistitle = "";
 		break;
 	}
 	
@@ -356,4 +416,8 @@ function yscale_selection()
 		.transition(500)
 		.attr("y", function(d, i) { return overview_yscale(i); })
 		.attr("height", function(d, i) {return height - overview_yscale(i);});
+		
+	siteselSVGg.select(".y.axis.l").transition().call(yAxisl);
+	siteselSVGg.select(".y.axis.r").transition().call(yAxisr);
+	d3.select(".y.axis.label").text(selaxistitle);
 }
